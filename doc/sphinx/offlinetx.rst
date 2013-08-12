@@ -33,7 +33,7 @@ And there is a single output at index 1 that we want to spend.
 
 Construct the transaction::
 
-    $ sx mktx txfile.tx --input 97e06e49dfdd26c5a904670971ccf4c7fe7d9da53cb379bf9b442fc9427080b3:1 --output 13Ft7SkreJY9D823NPm4t6D1cBqLYTJtAe:90000
+    $ sx mktx unsigned.tx --input 97e06e49dfdd26c5a904670971ccf4c7fe7d9da53cb379bf9b442fc9427080b3:1 --output 13Ft7SkreJY9D823NPm4t6D1cBqLYTJtAe:90000
 
 Because there is 100000 Satoshis going in, but only 9000 Satoshis out,
 the remaining 10000 Satoshis (0.0001 BTC) will be taken by the Bitcoin
@@ -42,7 +42,7 @@ network as a fee. This is how fees work internally in Bitcoin.
 `showtx` allows inspecting of tx files.
 ::
 
-    $ sx showtx txfile.tx
+    $ sx showtx unsigned.tx
     hash: 4d25b18ed094ad68f75f21692d8540f45ceb90b240a521b8f191e95d8b6b8bb0
     version: 1  locktime: 0
     Input:
@@ -62,9 +62,9 @@ We will now sign the first input using our private key.
 
     $ DECODED_ADDR=$(cat private.key | sx addr | sx decode-addr)
     $ PREVOUT_SCRIPT=$(sx rawscript dup hash160 [ $DECODED_ADDR ] equalverify checksig)
-    $ SIGNATURE=$(cat private.key | sx sign-input txfile.tx 0 $PREVOUT_SCRIPT)
-    $ sx rawscript [ $SIGNATURE ] [ $(cat private.key | sx pubkey) ] | sx set-input txfile.tx 0 > txfile.tx
-    $ sx showtx txfile.tx
+    $ cat private.key | sx sign-input unsigned.tx 0 $PREVOUT_SCRIPT > input0.signature
+    $ sx rawscript [ $(cat input0.signature) ] [ $(cat private.key | sx pubkey) ] | sx set-input unsigned.tx 0 > signed.tx
+    $ sx showtx signed.tx
     hash: 4a8be467fb75f0f757649348dbb05762142236ec236ac9e55e4683d7083ffca2
     version: 1  locktime: 0
     Input:
@@ -84,15 +84,15 @@ We will now sign the first input using our private key.
 
 Now the input script is prepared, and the tx is signed.
 
-Put ``txfile.tx`` on a USB stick, transport it to your online computer.
+Put ``signed.tx`` on a USB stick, transport it to your online computer.
 
 Broadcast the final tx to the Bitcoin network.
 ::
 
-    $ sx broadcast-tx txfile.tx
+    $ sx broadcast-tx signed.tx
 
 Or to send it to one Bitcoin node (like a localhost one), use:
 ::
 
-    $ sx sendtx txfile.tx localhost 4009
+    $ sx sendtx signed.tx localhost 4009
 
